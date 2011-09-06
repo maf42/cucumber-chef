@@ -1,4 +1,5 @@
 require "ubuntu_ami"
+require 'ftools'
 
 module Cucumber
   module Chef
@@ -84,6 +85,21 @@ module Cucumber
           disk_store = query.disk_store(self[:knife][:aws_instance_disk_store] || "instance-store")
           query.run["#{query.region_fix(self[:knife][:region])}_#{instance_arch}#{disk_store}"]
         end
+      end
+
+      def generate_chef_dir
+        dir = "/tmp/cc-#{$$}/.chef"
+        FileUtils.mkdir_p(dir, :mode => 0700)
+        File.open("#{dir}/knife.rb", "w") do |f|
+          %w[mode node_name chef_server_url validation_client_name].each do |key|
+            f.puts "#{key} \"#{config[key]}\""
+          end
+          f.puts 'client_key "/home/ubuntu/.chef/ubuntu.pem"'
+          f.puts 'validation_key "/home/ubuntu/.chef/validation.pem"'
+        end
+        File.copy(config[:client_key], "#{dir}/ubuntu.pem")
+        File.copy(config[:validation_key], "#{dir}/validation.pem")
+        dir
       end
 
     private

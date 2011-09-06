@@ -25,6 +25,9 @@ module Cucumber
         @hostname = lab.public_hostname
         @key = File.expand_path(@config[:knife][:identity_file])
         %x[scp -r -i #{@key} #{@project_dir} ubuntu@#{@hostname}: 2>/dev/null]
+        chef_dir = @config.generate_chef_dir
+        %x[scp -r -i #{@key} #{chef_dir} ubuntu@#{@hostname}:. 2>/tmp/err 1>&2]
+        FileUtils.rm_r chef_dir
         puts "Cucumber-chef project: #{File.basename(@project_dir)} sucessfully uploaded to the test lab."
       end
     end

@@ -161,6 +161,19 @@ describe Cucumber::Chef::Config do
         subject[:knife][:aws_instance_arch] = "amd64"
         subject.aws_image_id.should == "large-ebs-instance"
       end
+
+    end
+
+    it "should be able to generate a .chef-directory" do
+      dir = subject.generate_chef_dir
+      begin
+        File.stat(dir).mode.should == 040700
+        File.exist?("#{dir}/knife.rb").should == true
+        File.exist?("#{dir}/ubuntu.pem").should == true
+        File.exist?("#{dir}/validation.pem").should == true
+      ensure
+        Pathname.new(dir).rmtree
+      end
     end
   end
 end
