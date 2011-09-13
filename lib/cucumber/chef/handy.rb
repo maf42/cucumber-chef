@@ -10,6 +10,18 @@ module Cucumber
         create_container(server)
       end
 
+      def create_server_from_snapshot(server, ip, snapshot_name)
+        create_network_config(server, ip)
+        create_container(server)
+        restore_snapshot(server, snapshot_name)
+        open("#{get_root(server)}/etc/hostname", "w") do |f|
+          f.puts(server)
+        end
+        open("#{get_root(server)}/etc/hosts", "w") do |f|
+          f.puts("127.0.0.1 localhost #{server}")
+        end
+      end
+
       def create_network_config(name, ip)
         network_config = File.join("/etc/lxc", name)
         File.open(network_config, 'w') do |f|
@@ -87,6 +99,23 @@ module Cucumber
 
       def run_remote_command(remote_server, command)
         %x[ssh workstation.testlab 'ssh #{remote_server} #{command}']
+      end
+
+      def create_snapshot(name, snapshot)
+        stop_container(name)
+        %x[cd #{get_root(name)}; tar zcf /var/lib/cucumber_chef/snapshot/#{snapshot}.tar.gz .]
+      end
+
+      def snapshot_exists?(snapshot)
+        File.exists?("/var/lib/cucumber_chef/snapshot/#{snapshot}.tar.gz")
+      end
+
+      def restore_snapshot(name, snapshot)
+        stop_container(name)
+        root = get_root(name)
+        %x[rm -rf #{root}]
+        %x[mkdir -m 0755 #{root}]
+        %x[cd #{root}; tar zxf /var/lib/cucumber_chef/snapshot/#{snapshot}.tar.gz]
       end
     end
   end
